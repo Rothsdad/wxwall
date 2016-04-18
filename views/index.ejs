@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>微信墙</title>
+  <link rel='stylesheet' href='/bower_components/bootstrap/dist/css/bootstrap.min.css'/>
+  <style>
+    li > img{
+      width: 32px;
+    }
+  </style>
+</head>
+<body background="meteorshower.jpg" onload="startWebSocket();">
+<div class="col-sm-8;margin-left: auto;margin-right: auto;">
+  <h2 id="status" align="center" style="color:white;">微信墙</h2>
+  <ul id="messages" class="media-list">
+
+  </ul>
+</div>
+</body>
+<script type="text/javascript" src='/bower_components/jquery/dist/jquery.js'></script>
+<script src='/bower_components/jquery/dist/jquery.min.js'></script>
+<script src='/bower_components/bootstrap/dist/js/bootstrap.min.js'></script>
+<script type="text/javascript">
+  var msglist = document.getElementById('messages');
+  var connstatus = document.getElementById("status");
+  var ws = null;
+  function startWebSocket() {
+    if ('WebSocket' in window)
+      ws = new WebSocket("ws://123.206.95.66:10001");
+    else if ('MozWebSocket' in window)
+      ws = new MozWebSocket("ws://123.206.95.66:10001");
+    else
+      alert("not support");
+    ws.onopen = function (evt){
+      ws.send("connected");
+      connstatus.innerHTML = "上墙咯~";
+    }
+    ws.onmessage = function(evt) {
+      console.log(evt.data);
+      var msg = JSON.parse(evt.data);
+      msg.user = msg.user || {};
+      var userName = msg.user.nickname;
+      var headimg = msg.user.headimgurl;
+      var oLi = document.createElement('li');
+      oLi.className="well";
+      var msgType=msg.xml.MsgType[0];
+      if(msgType=="text") {
+        var content = msg.xml.Content[0];
+        oLi.innerHTML = '<a class="pull-left" href="#">'+
+                '<img width=64px height=64px src="' + headimg + '"/>'+
+                '</a>'+
+                '<div class="media-body">' +
+                '<h4 class="media-heading">@' + userName + ':</h4>'+
+                '<p>' + content + '</p>'+
+                '</div>';
+        //msglist.appendChild(oLi);
+      }else if(msgType=="image"){
+        var picUrl=msg.xml.PicUrl[0];
+        oLi.innerHTML = '<a class="pull-left" href="#">'+
+                '<img width=64px height=64px  src="' + headimg + '">'+
+                '</a>'+
+                '<div class="media-body">' +
+                '<h4 class="media-heading">@' + userName + ':</h4>'+
+                showImg(picUrl)+
+                '</div>';
+      }
+      prependChild(msglist,oLi);
+    };
+    ws.onclose = function (evt){
+      connstatus.innerHTML="大锤儿在哪里~微信墙出错啦：（";
+    };
+    ws.onerror = function (evt){
+      connstatus.innerHTML="错误";
+    }
+  }
+  function prependChild(parent,newChild){
+    if(parent.firstChild){
+      parent.insertBefore(newChild,parent.firstChild);
+    } else {
+      parent.appendChild(newChild);
+    }
+
+    return parent;
+  }
+  function showImg(url) {
+
+    var frameid = 'frameimg' + Math.random();
+    window.img = '<img id="img" style="width:50%" src=\'' + url + '?' + Math.random() + '\' /><script>window.onload = function() { parent.document.getElementById(\'' + frameid + '\').height = document.getElementById(\'img\').height+\'px\'; }<' + '/script>';
+    return ('<iframe id="'+frameid+'" src="javascript:parent.img;" frameBorder="0" scrolling="no" width="60%"></iframe>');
+  }
+</script>
+</html>
